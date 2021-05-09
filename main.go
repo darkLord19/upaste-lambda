@@ -17,9 +17,9 @@ import (
 )
 
 type Paste struct {
-	Name      string
-	Data      string
-	CreatedAt time.Time
+	Name      string    `json:"name"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 var db *dynamodb.DynamoDB
