@@ -22,7 +22,7 @@ type Paste struct {
 	CreatedAt time.Time
 }
 
-var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("ap-south-1"))
+var db *dynamodb.DynamoDB
 var errorLogger = log.New(os.Stderr, "ERROR ", log.Llongfile)
 
 func serverError(err error) (events.APIGatewayProxyResponse, error) {
@@ -56,7 +56,6 @@ func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		log.Fatalf("Got error marshalling new movie item: %s", err)
 		return serverError(err)
 	}
 
@@ -69,7 +68,6 @@ func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	_, err = db.PutItem(input)
 	if err != nil {
-		log.Fatalf("Got error calling PutItem: %s", err)
 		return serverError(err)
 	}
 	return events.APIGatewayProxyResponse{
@@ -88,5 +86,13 @@ func router(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, 
 }
 
 func main() {
+	region := "ap-south-1"
+	awsSession, err := session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	)
+	if err != nil {
+		return
+	}
+	db = dynamodb.New(awsSession)
 	lambda.Start(router)
 }
