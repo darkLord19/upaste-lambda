@@ -82,6 +82,8 @@ func router(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, 
 	switch req.HTTPMethod {
 	case "POST":
 		return createPaste(req)
+	default:
+		return clientError(http.StatusMethodNotAllowed)
 	}
 }
 
