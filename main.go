@@ -47,7 +47,10 @@ func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	var paste Paste
-	err := json.Unmarshal([]byte(req.Body), paste)
+	err := json.Unmarshal([]byte(req.Body), &paste)
+	if err != nil {
+		return clientError(http.StatusBadRequest)
+	}
 	ct := time.Now()
 	item := Paste{
 		Name:      "upaste_" + fmt.Sprint(ct.Unix()),
