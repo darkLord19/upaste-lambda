@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -23,33 +22,35 @@ type Paste struct {
 }
 
 var db *dynamodb.DynamoDB
-var errorLogger = log.New(os.Stderr, "ERROR ", log.Llongfile)
 
 func serverError(err error) (events.APIGatewayProxyResponse, error) {
-	errorLogger.Println(err.Error())
+	log.Println("ERROR ", err.Error())
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusInternalServerError,
-		Body:       http.StatusText(http.StatusInternalServerError),
+		Body:       err.Error(),
 	}, nil
 }
 
-func clientError(status int) (events.APIGatewayProxyResponse, error) {
+func clientError(err error) (events.APIGatewayProxyResponse, error) {
+	log.Println("ERROR ", err.Error())
+
 	return events.APIGatewayProxyResponse{
-		StatusCode: status,
-		Body:       http.StatusText(status),
+		StatusCode: http.StatusBadRequest,
+		Body:       err.Error(),
 	}, nil
 }
 
 func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if req.Headers["Content-Type"] != "application/json" || req.Headers["content-type"] != "application/json" {
-		return clientError(http.StatusNotAcceptable)
+	log.Println("ERROR: ", "HEADERS: ", req.Headers, "BODY:", req.Body)
+	if req.Headers["Content-Type"] != "application/json" && req.Headers["content-type"] != "application/json" {
+		return clientError(fmt.Errorf("%s", "Bad Request"))
 	}
 
 	var paste Paste
 	err := json.Unmarshal([]byte(req.Body), &paste)
 	if err != nil {
-		return clientError(http.StatusBadRequest)
+		return clientError(fmt.Errorf("%s %s", err.Error(), req.Body))
 	}
 	ct := time.Now()
 	item := Paste{
@@ -79,15 +80,6 @@ func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}, nil
 }
 
-func router(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	switch req.HTTPMethod {
-	case "POST":
-		return createPaste(req)
-	default:
-		return clientError(http.StatusMethodNotAllowed)
-	}
-}
-
 func main() {
 	region := "ap-south-1"
 	awsSession, err := session.NewSession(&aws.Config{
@@ -97,5 +89,5 @@ func main() {
 		return
 	}
 	db = dynamodb.New(awsSession)
-	lambda.Start(router)
+	lambda.Start(createPaste)
 }
