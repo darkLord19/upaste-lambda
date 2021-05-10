@@ -42,7 +42,7 @@ func clientError(status int) (events.APIGatewayProxyResponse, error) {
 }
 
 func createPaste(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if req.Headers["Content-Type"] != "application/json" {
+	if req.Headers["Content-Type"] != "application/json" || req.Headers["content-type"] != "application/json" {
 		return clientError(http.StatusNotAcceptable)
 	}
 
